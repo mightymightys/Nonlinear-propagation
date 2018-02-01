@@ -1,4 +1,4 @@
-% Propagation non-linéaire d'une impulsion brève avec dispersion et nonlinéarité d'ordre 3
+% Nonlinear propagation of a short laser pulse in a medium with dispersion and 3rd order nonlinearity	
 close all
 clear all
 
@@ -21,7 +21,7 @@ if saveimgs==0
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Paramètres
+%% Parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,13 +41,13 @@ end
   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calc parameters
-    %zMax = 2500;  % Distance totale de propagation in mm
+    %zMax = 2500;  % total propagation distance in mm
     zMax = 2000;    
 
-    dz = .5; % Pas d'intégration in mm
-    z = 0:dz:zMax; % Axe de propagation
+    dz = .5; % integration step in mm
+    z = 0:dz:zMax; % propagation axis
     nPoints = 2^13;
-    [nu,t] = ftAxis(nPoints,4); %ftAxis(nPoints, nuMax) % nu up to 4 PHz
+    [nu,t] = ftAxis(nPoints,4); %M. Joffre's ftAxis(nPoints, nuMax) % nu up to 4 PHz
                                 %(to sample well the field oscillations, just so you can make pretty plots)
                                 %(and to resolve steep pulsefronts due to SS)
     omega = (2*pi)*nu;
@@ -77,7 +77,7 @@ end
     disp(['The fiber transmission for the pure EH11 mode is ',num2str(100*exp(-2*attn_alpha*zMax),'%10.2f'),' %.']);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Profile de pression / densité de milieu
+    %Pressure profile / medium density
      p0 = 0.0; %gas pressure / density in bars at fiber entrance
      pL = 0.85; %gas input pressure / density in bars
      pZ = sqrt(p0^2 + z/zMax*(p0^2+pL^2));
@@ -154,7 +154,7 @@ end
     
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Champ électrique initial
+%% set up initial electric field
 %T_0 = lambda_0 *1e-9 /299792458 *1e15;
 
 carrier = exp(-1i*omega_0*t);
@@ -170,22 +170,22 @@ disp(['The peak intensity at the fiber input is ',num2str(I_0,'%10.2e\n'),' W/cm
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Résolution de l'équation différentielle par la méthode du pas fractionnée
+%% Solve propagation diff. eq. with split-step method
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-map = zeros(length(z),nPoints); % carte u(z,nu)
-map_t = zeros(length(z),nPoints); % carte u(z,t)
+map = zeros(length(z),nPoints); % initialize E-field(z,nu)
+map_t = zeros(length(z),nPoints); % initialize E-field(z,t)
 Bint = 0;
 accNLphase_t = zeros(1,length(t));
 
 field_t = field_t * sqrt(couplingeff);
 field = field * sqrt(couplingeff);
 
-map_t(1,:) = field_t.*carrier; % Stockage du champ temporelle
-map(1,:) = ift(field_t.*carrier); % Stockage du champ spectral
+map_t(1,:) = field_t.*carrier; % save initial temp. E-field, incl. carrier
+map(1,:) = ift(field_t.*carrier); % save initial spec. E-field, incl. carrier
 
 for iZ = 2:length(z)
-  % Domaine temporel (traitement de la non-linéarité)
+  % Time domain
   gamma = 2*pi/(lambda_0*1e-6)*pZ(iZ)*n20; %"nonlinear coefficient"
   
   if SPM==1
@@ -207,10 +207,10 @@ for iZ = 2:length(z)
   
   field_t = field_t .*exp(1i*phase_t_SPM) .*exp(1i*phase_t_SS); 
   
-  % Domaine spectral (traitement de la dispersion)
+  % Spectral domain
   field = ift(field_t);
   if DISP==1
-    phaseDISP = .5*k2*pZ(iZ)*dz*(omega).^2 + 1/6*k3*pZ(iZ)*dz*(omega).^3; % Phase spectrale (dispersion)
+    phaseDISP = .5*k2*pZ(iZ)*dz*(omega).^2 + 1/6*k3*pZ(iZ)*dz*(omega).^3; % spectral phase (dispersion)
   else
     phaseDISP = zeros(size(t));
   end
@@ -222,7 +222,7 @@ for iZ = 2:length(z)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
 if progressplots==1
   if rem(iZ,20)==0 || iZ==length(z)
-    % Représentation graphique de l'intensité temporelle
+    % plot temporal intensity envelope
       figure(1)
       subplot(2,1,1)
           plot(t,(abs(field_t)).^2,'LineWidth',1.5);
@@ -233,7 +233,7 @@ if progressplots==1
           ylim([0 1]);
           xlim(2*[-tau_0 tau_0]);
         title(['z = ',num2str(z(iZ)),' mm']);
-  % Représentation graphique de l'intensité spectrale
+  % plot spectral intensity envelope
       subplot(2,1,2)
           plot(omega+omega_0,abs(field).^2,'LineWidth',1.5);
           xlabel('Fréquence (PHz)');
@@ -245,8 +245,8 @@ if progressplots==1
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
-  map_t(iZ,:) = field_t .*carrier; % Stockage du champ temporelle avec porteuse
-  map(iZ,:) = ift(field_t .*carrier); % Stockage du champ spectral (avec porteuse)
+  map_t(iZ,:) = field_t .*carrier; % Save temp. field, incl. carrier wave
+  map(iZ,:) = ift(field_t .*carrier); % Save spec. field, incl. carrier wave
 end;
 
 disp(['The accumulated B-integral is ',num2str(Bint,'%10.2f'),' rad.'])
