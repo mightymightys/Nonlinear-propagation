@@ -12,7 +12,7 @@ saveimgs=0;
 spcgrmmovie=0;
 
 if saveimgs==0
-    outfolder='out';
+    outfolder='C:\Users\haessler\Documents\SIMULATION results\Nonlinear propagation';
     if exist(outfolder, 'dir')==7
         warning('I will rename the old outfolder.')
         movefile(outfolder,[outfolder,'_old'])
