@@ -1,4 +1,18 @@
-% Nonlinear propagation of a short laser pulse in a medium with dispersion and 3rd order nonlinearity	
+%*********************************************************
+%   NONLINEAR PROPAGATION
+%
+%   Developement started: 10/2017
+%
+%   Author: Stefan Haessler haessler@ensta.fr;
+%
+%*********************************************************
+%
+%   Description: 1D NONLINEAR PROPAGATION of a short laser pulse
+%	in a medium with dispersion and 3rd order nonlinearity	
+%
+%   Changelog: --
+%
+%*********************************************************
 close all
 clear all
 
@@ -11,8 +25,8 @@ progressplots=1;
 saveimgs=0; 
 spcgrmmovie=0;
 
-if saveimgs==0
-    outfolder='C:\Users\haessler\Documents\SIMULATION results\Nonlinear propagation';
+if saveimgs==1
+    outfolder='C:\Users\haessler\Documents\SIMULATION results\Nonlinear propagation\out';
     if exist(outfolder, 'dir')==7
         warning('I will rename the old outfolder.')
         movefile(outfolder,[outfolder,'_old'])
@@ -26,8 +40,8 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % INPUT PULSE
-    %E_0 = 10 ; %input pulse energy (mJ)
-    E_0 = 1.5;
+    E_0 = 9 ; %input pulse energy (mJ)
+    %E_0 = 1.5;
     tau_0 = 25; %input pulse duration FWHM in fs 
     lambda_0 = 800; %input carrier wavelength in nm
     omega_0 = 2*pi*299792458 / lambda_0 *1e-6;  % in PHz
@@ -41,8 +55,8 @@ end
   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calc parameters
-    %zMax = 2500;  % total propagation distance in mm
-    zMax = 2000;    
+    zMax = 2500;  % total propagation distance in mm
+    %zMax = 2000;    
 
     dz = .5; % integration step in mm
     z = 0:dz:zMax; % propagation axis
@@ -64,11 +78,12 @@ end
 
     gas = mymenu('Which gas fills the fiber ?',{'Ar','Ne','He','as specified in script'},4);
     gases = {'Ar','Ne','He','other'};
-    %couplingeff = 0.7;
+    
     couplingeff = 0.8;
-    %fiberdiam = 0.536; %fiber inner diameter in mm
+    
+    fiberdiam = 0.536; %fiber inner diameter in mm
     %fiberdiam = 0.250; 
-    fiberdiam = 0.320; 
+    %fiberdiam = 0.320; 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     %field attenuation constant in mm^-1 for lowest order fiber mode EH11
@@ -79,7 +94,7 @@ end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Pressure profile / medium density
      p0 = 0.0; %gas pressure / density in bars at fiber entrance
-     pL = 0.85; %gas input pressure / density in bars
+     pL = 1.3; %gas input pressure / density in bars
      pZ = sqrt(p0^2 + z/zMax*(p0^2+pL^2));
     
      %p0 = 1.0;
@@ -142,11 +157,11 @@ end
 %      k2comp = -15; % GVD of compressor in fs^2
 %      k3comp = 10; % TOD of compressor in fs^3
 %     
-%     k2comp = -20; % good for sim of our setup 
-%     k3comp = 13; % good for sim of our setup 
+     k2comp = -20; % good for sim of our setup 
+     k3comp = 13; % good for sim of our setup 
     
-    k2comp = 0; 
-    k3comp = 0;
+%    k2comp = 0; 
+%    k3comp = 0;
 
     
     
