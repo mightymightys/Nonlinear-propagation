@@ -21,7 +21,7 @@ SS=1;
 DISP=1;
 ATTN=1;
 
-progressplots=1;
+progressplots=0;
 saveimgs=0; 
 spcgrmmovie=0;
 
@@ -76,7 +76,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
 % PROPAGATION MEDIUM
 
-    gas = mymenu('Which gas fills the fiber ?',{'Ar','Ne','He','as specified in script'},4);
+    %gas = mymenu('Which gas fills the fiber ?',{'Ar','Ne','He','as specified in script'},4);
+    gas = 3,
     gases = {'Ar','Ne','He','other'};
     
     couplingeff = 0.8;
@@ -94,7 +95,7 @@ end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Pressure profile / medium density
      p0 = 0.0; %gas pressure / density in bars at fiber entrance
-     pL = 1.3; %gas input pressure / density in bars
+     pL = 1.0; %gas input pressure / density in bars
      pZ = sqrt(p0^2 + z/zMax*(p0^2+pL^2));
     
      %p0 = 1.0;
@@ -148,7 +149,7 @@ end
 %% COMPRESSION
     Avozzi = 2.62e-9 * [1.79, 1.14, 1, 2.08]; %Vozzi's prop. constant for estimating the min. fiber radius,
                                               %2.08 is for Kr
-    amin = Avozzi(gas) * (tau_0*1e-15)^-.45 * (E_0*1e-3)^.51;
+    amin = Avozzi(gas) * (tau_0*1e-15)^-.45 * (E_0*couplingeff*1e-3)^.51;
     disp(['For this input pulse and gas, Catherina Vozzi advises'])
     disp(['a minimal fiber diameter of ',num2str(2*amin*1e6),' microns.']);
     
@@ -266,7 +267,32 @@ end;
 
 disp(['The accumulated B-integral is ',num2str(Bint,'%10.2f'),' rad.'])
 
- 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% calculate final spectral width according to Eq. 9 in Pinault and Potasek, JOSA B 2, 1318 (1985), and multiply by 2 so you have an actual width
+posspecpoints = (nPoints/2+10:nPoints);
+%posspecpoints = (1:nPoints);
+
+spec = (abs(map(1,posspecpoints))).^2;
+specint = sum(spec);
+inputrmsbandwidth = 2*sqrt( sum(omega(posspecpoints).^2 .*spec)/specint - (sum(omega(posspecpoints).*spec)/specint)^2); %in PHz
+
+spec = lambda(posspecpoints).^(-2).*spec;
+specint = sum(spec(2:end).*-diff(lambda(posspecpoints)));
+inputrmsbandwidth_lambda = 2*sqrt( sum( lambda(posspecpoints(2:end)).^2.*spec(2:end).*-diff(lambda(posspecpoints)))/specint ...
+                                - (sum( lambda(posspecpoints(2:end))   .*spec(2:end).*-diff(lambda(posspecpoints)))/specint)^2); %in nm
+
+
+spec = (abs(map(end,posspecpoints))).^2;
+specint = sum(spec);
+finalrmsbandwidth = 2*sqrt( sum(omega(posspecpoints).^2 .*spec)/specint - (sum(omega(posspecpoints).*spec)/specint)^2); %in PHz
+
+spec = lambda(posspecpoints).^(-2).*spec; 
+specint = sum(spec(2:end).*-diff(lambda(posspecpoints)));
+finalrmsbandwidth_lambda = 2*sqrt( sum( lambda(posspecpoints(2:end)).^2.*spec(2:end).*-diff(lambda(posspecpoints)))/specint ...
+                                - (sum( lambda(posspecpoints(2:end))   .*spec(2:end).*-diff(lambda(posspecpoints)))/specint)^2); %in nm
+
+clear spectrum
+disp(['The final rms bandwidth is ',num2str(finalrmsbandwidth,'%10.2f'),' PHz or ',num2str(finalrmsbandwidth_lambda,'%10.2f'),' nm, after broadening by a factor ',num2str(finalrmsbandwidth/inputrmsbandwidth,'%10.2f'),'.'])
   
   
 %% make series of spectrograms
@@ -606,7 +632,7 @@ cmpspecphase = cmpspecphase - P(1)*omega - P(2);
 %  xlabel('Fréquence (PHz)'); 
 %  xlim(AX(2), [0.2 0.6]) 
 %  xlim(AX(1), [0.2 0.6])  
-[AX, H1, H2] = plotyy(lambda, (abs(compressedfield)).^2, lambda, cmpspecphase);
+[AX, H1, H2] = plotyy(lambda, (abs(lambda.^(-2).*compressedfield)).^2, lambda, cmpspecphase);  % scale from dE/domega to dE/dlambda
  set(H1,'LineWidth',1.5)
  set(H2,'LineWidth',1.5)
  xlabel('Wavelength (nm)');
