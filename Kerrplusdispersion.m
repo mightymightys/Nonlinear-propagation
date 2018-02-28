@@ -21,7 +21,7 @@ SS=1;
 DISP=1;
 ATTN=1;
 
-progressplots=0;
+progressplots=1;
 saveimgs=0; 
 spcgrmmovie=0;
 
@@ -77,7 +77,7 @@ end
 % PROPAGATION MEDIUM
 
     %gas = mymenu('Which gas fills the fiber ?',{'Ar','Ne','He','as specified in script'},4);
-    gas = 3,
+    gas = 3;
     gases = {'Ar','Ne','He','other'};
     
     couplingeff = 0.8;
@@ -88,14 +88,15 @@ end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     %field attenuation constant in mm^-1 for lowest order fiber mode EH11
-    attn_alpha = (2.405/2/pi)^2 * (lambda_0*1e-6)^2 /(0.5*fiberdiam)^3 * .5*(1.5^2 +1) /sqrt(1.5^2-1); 
-    if ATTN==0;  attn_alpha = 0; end
+    if ATTN==0;  attn_alpha = 0;
+    else         attn_alpha = (2.405/2/pi)^2 * (lambda_0*1e-6)^2 /(0.5*fiberdiam)^3 * .5*(1.5^2 +1) /sqrt(1.5^2-1); 
+    end
     disp(['The fiber transmission for the pure EH11 mode is ',num2str(100*exp(-2*attn_alpha*zMax),'%10.2f'),' %.']);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Pressure profile / medium density
      p0 = 0.0; %gas pressure / density in bars at fiber entrance
-     pL = 1.0; %gas input pressure / density in bars
+     pL = 1.3; %gas input pressure / density in bars
      pZ = sqrt(p0^2 + z/zMax*(p0^2+pL^2));
     
      %p0 = 1.0;
@@ -276,17 +277,16 @@ spec = (abs(map(1,posspecpoints))).^2;
 specint = sum(spec);
 inputrmsbandwidth = 2*sqrt( sum(omega(posspecpoints).^2 .*spec)/specint - (sum(omega(posspecpoints).*spec)/specint)^2); %in PHz
 
-spec = lambda(posspecpoints).^(-2).*spec;
+%spec = lambda(posspecpoints).^(-2).*spec; % don't rescale because you do use the corrrect non-constant diff(lambda)
 specint = sum(spec(2:end).*-diff(lambda(posspecpoints)));
 inputrmsbandwidth_lambda = 2*sqrt( sum( lambda(posspecpoints(2:end)).^2.*spec(2:end).*-diff(lambda(posspecpoints)))/specint ...
                                 - (sum( lambda(posspecpoints(2:end))   .*spec(2:end).*-diff(lambda(posspecpoints)))/specint)^2); %in nm
-
 
 spec = (abs(map(end,posspecpoints))).^2;
 specint = sum(spec);
 finalrmsbandwidth = 2*sqrt( sum(omega(posspecpoints).^2 .*spec)/specint - (sum(omega(posspecpoints).*spec)/specint)^2); %in PHz
 
-spec = lambda(posspecpoints).^(-2).*spec; 
+%spec = lambda(posspecpoints).^(-2).*spec;  % don't rescale because you do use the corrrect non-constant diff(lambda)
 specint = sum(spec(2:end).*-diff(lambda(posspecpoints)));
 finalrmsbandwidth_lambda = 2*sqrt( sum( lambda(posspecpoints(2:end)).^2.*spec(2:end).*-diff(lambda(posspecpoints)))/specint ...
                                 - (sum( lambda(posspecpoints(2:end))   .*spec(2:end).*-diff(lambda(posspecpoints)))/specint)^2); %in nm
@@ -632,7 +632,7 @@ cmpspecphase = cmpspecphase - P(1)*omega - P(2);
 %  xlabel('Fréquence (PHz)'); 
 %  xlim(AX(2), [0.2 0.6]) 
 %  xlim(AX(1), [0.2 0.6])  
-[AX, H1, H2] = plotyy(lambda, (abs(lambda.^(-2).*compressedfield)).^2, lambda, cmpspecphase);  % scale from dE/domega to dE/dlambda
+[AX, H1, H2] = plotyy(lambda, lambda.^(-2).*(abs(compressedfield)).^2, lambda, cmpspecphase);  % scale from dE/domega to dE/dlambda
  set(H1,'LineWidth',1.5)
  set(H2,'LineWidth',1.5)
  xlabel('Wavelength (nm)');
@@ -689,6 +689,7 @@ if saveimgs==1
         fprintf(fid, 'fiberdiam = %f mm \r\n',  fiberdiam);
         fprintf(fid, 'fiber transmission for EH11 = %10.2f percent\r\n', 100*exp(-2*attn_alpha*zMax));
         fprintf(fid, 'peak intensity at fiber input = %10.2e W/cm^2 \r\n', I_0 );
+        fprintf(fid, 'coupling efficiency = %10.2f \r\n', couplingeff );
         if pZ(end) == pZ(1)
          fprintf(fid, 'constant pressure = %f bar \r\n',  p0);
         else 
