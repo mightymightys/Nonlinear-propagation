@@ -1,4 +1,4 @@
-![An output spectrogram supporting a 3.5-fs laser pulse.](/docs/output_spectrogram.png)
+<img src="/docs/output_spectrogram.png" alt="An output spectrogram supporting a 3.5-fs laser pulse." width="300"/>
 
 This is a simple matlab script, written by Stefan Haessler of [Laboratoire d'Optique Appliquée (LOA), CNRS, Institut Polytechnique de Paris, France](https://loa.ensta-paris.fr/research/pco-research-group/). It that solves the 1D nonlinear Schrödinger equation with a Kerr-nonlinearity and dispersion with a split-step method.
 
