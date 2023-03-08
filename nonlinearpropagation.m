@@ -17,7 +17,7 @@ clear all
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% COMPRESSION
-      k2comp = -25; % GVD of compressor in fs^2
+      k2comp = -27; % GVD of compressor in fs^2
       k3comp = 25; % TOD of compressor in fs^3
 
     automaticcompression = 0;
@@ -26,11 +26,11 @@ clear all
 %% 
 close all
 
-%switch on (=1) or off (=0) different effects
-SPM=1;
-SS=1;
-DISP=1;
-ATTN=1;
+%switch on or off different effects
+SPM=true;
+SS=true;
+DISP=true;
+ATTN=true;
 
 
 disp('****************************************************************** ')
@@ -41,8 +41,8 @@ disp('****************************************************************** ')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % INPUT PULSE   
-    E_0 = 1.0 ; %input pulse energy (mJ)
-    tau_0 = 24; %input pulse duration FWHM in fs 
+    E_0 = 6.5 ; %input pulse energy (mJ)
+    tau_0 = 25; %input pulse duration FWHM in fs 
     lambda_0 = 800; %input carrier wavelength in nm
     omega_0 = 2*pi*299792458 / lambda_0 *1e-6;  % in PHz
 
@@ -51,15 +51,15 @@ disp('****************************************************************** ')
     k30 = 0; % input pulse TOD fs^3
 
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    polariz=0; %0...linear; 1...circular (only reduce n2 by 2/3)
+    polariz=1; %0...linear; 1...circular (only reduce n2 by 2/3)
   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calc parameters
-    zMax = 1000;  % total propagation distance in mm   
+    zMax = 2500;  % total propagation distance in mm   
 
     dz =  zMax/2500; % integration step in mm
     z = 0:dz:zMax; % propagation axis
-    nPoints = 2^12;
+    nPoints = 2^13;
     [nu,t] = ftAxis(nPoints,4); %M. Joffre's ftAxis(nPoints, nuMax) % nu up to 4 PHz
                                 %(to sample well the field oscillations, just so you can make pretty plots)
                                 %(and to resolve steep pulsefronts due to SS)
@@ -79,26 +79,24 @@ disp('****************************************************************** ')
     %gas = 3;
     gases = {'Ar','Ne','He','other'};
   
-    %fiberdiam = 0.536; %fiber inner diameter in mm
-    fiberdiam = 0.250; 
-    %fiberdiam = 0.320; 
-    %fiberdiam = 0.520; 
+    fiberdiam = 0.536; %fiber inner diameter in mm
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     %field attenuation constant in mm^-1 for lowest order fiber mode EH11
-    if ATTN==0;  attn_alpha = 0;
-    else         attn_alpha = (2.405/2/pi)^2 * (lambda_0*1e-6)^2 /(0.5*fiberdiam)^3 * .5*(1.5^2 +1) /sqrt(1.5^2-1); 
+    if ATTN;  attn_alpha = (2.405/2/pi)^2 * (lambda_0*1e-6)^2 /(0.5*fiberdiam)^3 * .5*(1.5^2 +1) /sqrt(1.5^2-1);
+    else      attn_alpha = 0;    
     end
     disp(['The fiber transmission for the pure EH11 mode is ',num2str(100*exp(-2*attn_alpha*zMax),'%10.2f'),' %.']);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Pressure profile / medium density
-%      p0 = 0.0; %gas pressure / density in bars at fiber entrance
-%      pL = 1.3; %gas input pressure / density in bars
-%      pZ = sqrt(p0^2 + z/zMax*(p0^2+pL^2));
-    
-     p0 = 1.5 ;
-     pZ = p0*ones(size(z));
+     p0 = 0.0; %gas pressure / density in bars at fiber entrance
+     pL = 1.3; %gas input pressure / density in bars
+     pZ = sqrt(p0^2 + z/zMax*(p0^2+pL^2));
+     
+%      p0 = 1.3 ;
+%      pZ = p0*ones(size(z));
     
     if pZ(end) == pZ(1)
          infostring=['constant pressure of ',num2str(p0),' bars.'];
@@ -175,8 +173,8 @@ phase0 = k20/2*(omega).^2 + k30/6*(omega).^3; % Phase spectrale (dispersion)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Autofocalization ?
-    P_cr = (lambda_0*1e-7)^2 /2/pi/(n20* max(pZ))/1e9 ; %critical power for autofocalization in GW
-    P_in = E_0*1e-3 /(tau_0*1e-15) /1e9; % power at input 
+    P_cr = (lambda_0*1e-7)^2 /2/pi/(n20* max(pZ))/1e9 ; %critical power for self-focusing in GW
+    P_in = E_0*1e-3 /(tau_0*1e-15) /1e9; % power at input. Actually the peak power of a Gaussian is 0.94*that, but we're not that picky I suppose.
     disp(['--']);
     disp(['The peak power at the fiber input is ',num2str(P_in,'%10.0f\n'),' GW,']);
     disp(['i.e. ',num2str(P_in/P_cr,'%10.2f\n'),' times the cricital power for self-focusing for the gas pressure at the fiber exit of ',num2str(P_cr,'%10.0f\n'),' GW.']);
@@ -218,13 +216,13 @@ for iZ = 2:length(z)
   % Time domain
   gamma = 2*pi/(lambda_0*1e-6)*pZ(iZ)*n20; %"nonlinear coefficient"
   
-  if SPM==1
+  if SPM
     phase_t_SPM = gamma*I_0*(abs(field_t)).^2*dz; % SPM temporal phase 
   else  
     phase_t_SPM = zeros(size(t));
   end
   
-  if SS==1
+  if SS
     phase_t_SS  = 1i*I_0*gamma/omega_0 .*field_t.*ft(-1i*omega.*ift(conj(field_t)))*dz ...
                 +2*1i*I_0*gamma/omega_0 .*conj(field_t) .*ft(-1i*omega.*ift(field_t))*dz; 
                 % SS temporal phase, as in [Deiterding et al., Journal of Lightwave Technology 31, 2008 (2013)], Eq. (14)
@@ -238,7 +236,7 @@ for iZ = 2:length(z)
   field_t = field_t .*exp(1i*phase_t_SPM) .*exp(1i*phase_t_SS) *exp(-attn_alpha*dz); 
   
   % Spectral domain
-  if DISP==1
+  if DISP
     field = ift(field_t);
   
     phaseDISP = .5*k2*pZ(iZ)*dz*(omega).^2 + 1/6*k3*pZ(iZ)*dz*(omega).^3; % spectral phase (dispersion)
@@ -280,7 +278,7 @@ for iZ = 2:length(z)
       map(end,:) = ift(field_t .*carrier); % Save spec. field, incl. carrier wave
       fprintf('\n');
       disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
-      disp(['Energy is no longer conserved, your pulse is broken, probably due to wavebreacking.']);
+      disp(['Energy is no longer conserved, your pulse is broken, probably due to wavebreaking.']);
       disp(['We STOP the propagation here at z = ',num2str(z(iZ)),' mm.']);
       disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
       break
@@ -322,16 +320,17 @@ disp(['The final rms bandwidth is ',num2str(finalrmsbandwidth,'%10.2f'),' PHz or
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compression de l'impulsion en appliquant une GDD + TOD
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if automaticcompression 
    [~,bar1]=min(abs(omega- (specCM-0.5*finalrmsbandwidth)));
    [~,bar2]=min(abs(omega- (specCM+0.5*finalrmsbandwidth)));
    P = polyfit(omega(bar1:bar2)-omega_0, unwrap(angle(map(end,bar1:bar2))),3);
-if automaticcompression ==1
    k2comp = -P(2)*2;
    k3comp = -P(1)*6;
-else
-    P(2) = -k2comp/2;
-    P(1) = -k3comp/6;
 end
+% else
+%     P(2) = -k2comp/2;
+%     P(1) = -k3comp/6;
+% end
 compressedfield = map(end,:) .*exp(1i*.5*k2comp*(omega-omega_0).^2 + 1i/6*k3comp*(omega-omega_0).^3);
 compressedfield_t(:) = ft(compressedfield);
 compressedint(:) = (abs(compressedfield_t)).^2;
@@ -457,16 +456,18 @@ figure(4)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
 figure;
-plot(t, compressedint,'LineWidth',1.5);
+plot(t, compressedint/(sum(compressedint)*dt*1e-15)*E_0*1e-3*1e-12,'LineWidth',1.5);
  xlabel('Time (fs)');
-  ylabel('I(t)');
+  ylabel('Power (TW)');
   xlim([-5*compressedtau 5*compressedtau]);
   %ylim([0 2]);
 
 
   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
 figure;
 
 minwl = round((lambda_0 - 1.5*finalrmsbandwidth_lambda(end))/20)*20;
